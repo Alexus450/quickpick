@@ -2,10 +2,10 @@
 /**
  * Plugin Name:       QuickPick
  * Plugin URI:        https://wordpress.org/plugins/quickpick
- * Description:       Handle the basics with this plugin.
+ * Description:       QuickPick is a tiny WordPress plugin that will help you to save time on finding just recently editing posts.
  * Version:           1.0.0
  * Author:            Alex Samarschi
- * Author URI:        https://alexsamarschi.com
+ * Author URI:        https://profiles.wordpress.org/alexus450/
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       quickpick
@@ -22,7 +22,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 	 */
 	final class QuickPick {
 
-		/**
+		/** 
 		 * This plugin's instance.
 		 *
 		 * @var QuickPick
@@ -71,7 +71,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 		 *
 		 * Load plugin localization files.
 		 *
-		 * Fired by `init` action hook.
+		 * Fired by 'init' action hook.
 		 *
 		 * @since 1.0.0
 		 * @access public
@@ -144,7 +144,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 						<div class="qp-button">QuikPick</div>
 						<input type="checkbox" class="qp-input" id="quickpick-input">
 						<ul class="qp-menu">
-							<li class="homepage-link">' . $this->get_frontpage_edit_link() . '</li>
+							<li class="homepage-link">' . $this->get_frontpage_edit_link() . '<small>' . esc_html__( 'this page is set as homepage', 'quickpick' ) . '</small></li>
 							<li>' . $this->last_updated_pages() . '</li>
 							<li class="divider"></li>
 						</ul>
@@ -167,20 +167,22 @@ if( ! class_exists( 'QuickPick' ) ) {
 			// Query Arguments
 			$args = array(
 				'orderby'             => 'modified',
-				'ignore_sticky_posts' => '1'
+				'ignore_sticky_posts' => '1',
+				'posts_per_page'      => '5'
 			);
 			 
 			//Loop to display 5 recently updated posts
 			$query = new WP_Query( $args );
-			$counter = 1;
 			
 			$out = '<ul>';	
 
-			while( $query->have_posts() && $counter <= 5 ) : $query->the_post();
+			while( $query->have_posts() ) : $query->the_post();
 
-				$out .= '<li><a href="' . get_edit_post_link( $query->post->ID ) . '"> ' . get_the_title( $query->post->ID ) . '  <span>edited: ' . get_the_modified_date() . ' at ' . get_the_modified_time() . '</span></a></li>';
-				$counter++;
-
+				$out .= '<li>
+							<a href="' . get_edit_post_link( $query->post->ID ) . '"> 
+								' . get_the_title( $query->post->ID ) . '  <span>' . esc_html__( 'edited:', 'quickpick' ) . ' ' . get_the_modified_date() . ' ' . esc_html__( 'at', 'quickpick' ) . ' ' . get_the_modified_time() . '</span>
+							</a>
+						</li>';
 			endwhile; 
 
 			$out .= '</ul>';
@@ -200,21 +202,23 @@ if( ! class_exists( 'QuickPick' ) ) {
 
 			// Query Arguments
 			$args = array(
-				'post_type' => 'page',
-				'orderby'   => 'modified',
+				'post_type'      => 'page',
+				'orderby'        => 'modified',
+				'posts_per_page' => '5'
 			);
 			 
 			//Loop to display 5 recently updated pages
 			$query = new WP_Query( $args );
-			$counter = 1;
-			
+
 			$out = '<ul>';	
 
-			while( $query->have_posts() && $counter <= 5 ) : $query->the_post();
+			while( $query->have_posts() ) : $query->the_post();
 
-				$out .= '<li><a href="' . get_edit_post_link( $query->post->ID ) . '"> ' . get_the_title( $query->post->ID ) . '  <span>edited: ' . get_the_modified_date() . ' at ' . get_the_modified_time() . '</span></a></li>';
-				$counter++;
-
+				$out .= '<li>
+							<a href="' . get_edit_post_link( $query->post->ID ) . '"> 
+								' . get_the_title( $query->post->ID ) . '  <span>' . esc_html__( 'edited:', 'quickpick' ) . ' ' . get_the_modified_date() . ' ' . esc_html__( 'at', 'quickpick' ) . ' ' . get_the_modified_time() . '</span>
+							</a>
+						</li>';
 			endwhile; 
 
 			$out .= '</ul>';
@@ -225,14 +229,16 @@ if( ! class_exists( 'QuickPick' ) ) {
 		} 
 
 		/**
-		 * Add style to the quickpick button and section
+		 * Add style to the quickpick button and dropdown block
 		 *
 		 * @since 1.0.0
 		 * @return void
 		 */
 		public function quickpick_css() {
+			
+			$assets_url = plugins_url( '/assets', __FILE__ );
 
-			$style = "<style type='text/css'>
+			echo "<style type='text/css'>
 						.qp-dropdown {
 							display: inline-block;
 							position: relative;							
@@ -245,6 +251,12 @@ if( ! class_exists( 'QuickPick' ) ) {
 							cursor: pointer;
 							white-space: nowrap;
 							margin-left:5px;
+							background-image:url( {$assets_url}/images/quickpick.png );
+							background-position:10px center;
+							background-repeat:no-repeat;
+							background-size:20px;
+							padding-left:35px;
+
 						}
 						.qp-button:after {
 							content: '';
@@ -292,6 +304,14 @@ if( ! class_exists( 'QuickPick' ) ) {
 							padding:15px 20px;
 							font-weight:bold;
 						}
+						.qp-menu li.homepage-link small {
+							font-weight:normal;
+							padding-left:.2em;
+						}
+						.qp-menu li.homepage-link a {
+							padding-bottom:0px;
+							line-height:15px;
+						}
 						.qp-menu li a {
 							display: block;
 						}
@@ -301,7 +321,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 						}
 						.qp-menu li ul li {
 							display:block;
-							padding: 10px 20px;
+							padding: 13px 20px;
 						}
 						.qp-menu li ul > :nth-child(2n+1) {
 							background-color:#f6f7f7;
@@ -317,8 +337,6 @@ if( ! class_exists( 'QuickPick' ) ) {
 							display:block;
 						}
 					</style>";
-
-			echo $style;
 
 		}
 
