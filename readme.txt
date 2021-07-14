@@ -21,11 +21,6 @@ QuickPick will display your last 5 edited posts or pages so you can access and e
 This plugin was created to save time to find the just recently edit page or post, in case you need to modify/edit it again. 
 
 
-== How it works? ==
-
-Go to the **Settings > Preload Featured Images** page and choose the image size used by your theme to make sure the right image size is preloaded.
-
-
 == Installation ==
 
 1. Install QuickPick either via the Plugins > Add New page in your WordPress Dashboard, or by downloading the plugin and uploading the file in Plugins > Add New.
