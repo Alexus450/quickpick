@@ -2,10 +2,10 @@
 Contributors: alexus450
 Donate link: http://paypal.me/gt330/5usd
 Tags: quick edit, edit post, edit page, recently, edited
-Requires at least: 5.0
-Requires PHP: 5.6
-Tested up to: 5.7
-Stable tag: 1.0.0
+Requires at least: 5.7
+Requires PHP: 7.2
+Tested up to: 6.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 

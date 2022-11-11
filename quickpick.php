@@ -3,7 +3,7 @@
  * Plugin Name:       QuickPick
  * Plugin URI:        https://wordpress.org/plugins/quickpick
  * Description:       QuickPick is a tiny WordPress plugin that will help you to save time on finding just recently editing posts.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Alex Samarschi
  * Author URI:        https://profiles.wordpress.org/alexus450/
  * License:           GPL v2 or later
