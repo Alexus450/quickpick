@@ -1,16 +1,16 @@
-**/node_modules/**
-*.sublime-project
-*.sublime-workspace
-*.cache
-**/.DS_Store
 
-#Ignore Custom Components
-/src/components/food-icons/index.js
-/src/components/food-icons/svg/*.svg
-
-#/src/wpzoom-blocks
-
-#Ignore PRO Blocks
-/src/pro-version
-languages/.DS_Store
+# Composer dependencies
 /vendor/
+
+# OS Files
+.DS_Store
+
+# IDE Files
+.idea/
+.vscode/
+
+# Build artifacts
+/thumbs
+
+# Documentation
+CLAUDE.md

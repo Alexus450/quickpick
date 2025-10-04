@@ -3,13 +3,17 @@
  * Plugin Name:       QuickPick
  * Plugin URI:        https://wordpress.org/plugins/quickpick
  * Description:       QuickPick is a tiny WordPress plugin that will help you to save time on finding just recently editing posts.
- * Version:           1.0.1
- * Author:            Alex Samarschi
+ * Version:           1.0.2
+ * Author:            Alexei Samarschi
  * Author URI:        https://profiles.wordpress.org/alexus450/
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       quickpick
  * Domain Path:       /languages
+ * Requires at least: 5.0
+ * Requires PHP:      5.6
+ * Tested up to:      6.8
+ * Update URI:        https://wordpress.org/plugins/quickpick/
  */
 
 //Exit if accessed directly
@@ -140,11 +144,17 @@ if( ! class_exists( 'QuickPick' ) ) {
 				return $views;
 			}
 
+			$desc = '<small>' . esc_html__( 'this page is set as homepage', 'quickpick' ) . '</small>';
+			$frontpage_id = get_option( 'page_on_front' );
+			if( empty( $frontpage_id ) ) {
+				$desc = '';
+			}
+
 			$out = '<label class="qp-dropdown">
 						<div class="qp-button">QuikPick</div>
 						<input type="checkbox" class="qp-input" id="quickpick-input">
 						<ul class="qp-menu">
-							<li class="homepage-link">' . $this->get_frontpage_edit_link() . '<small>' . esc_html__( 'this page is set as homepage', 'quickpick' ) . '</small></li>
+							<li class="homepage-link">' . $this->get_frontpage_edit_link() . $desc . '</li>
 							<li>' . $this->last_updated_pages() . '</li>
 							<li class="divider"></li>
 						</ul>
@@ -283,10 +293,10 @@ if( ! class_exists( 'QuickPick' ) ) {
 						.qp-menu {
 							position: absolute;
 							top: 100%;
-							border-radius: 4px;
+							border-radius: 5px;
 							padding: 0;
 							margin: 2px 0 0 0;
-							box-shadow: 0 0 6px 0 rgba(0,0,0,0.1);
+							box-shadow: 1px 2px 5px 1px rgba(178.5, 178.5, 178.5, 0.5607843137254902);
 							background-color: #ffffff;
 							list-style-type: none;
 						}
