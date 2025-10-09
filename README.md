@@ -12,9 +12,16 @@ QuickPick is a tiny WordPress plugin that helps you save time by quickly accessi
 - **Quick Access**: Display recently edited posts and pages in a convenient dropdown
 - **Clean Interface**: Intuitive dropdown menu that matches WordPress admin design
 - **Homepage Integration**: Special homepage link for pages
+- **Set as Homepage**: Set any page as homepage with one click (AJAX-powered)
 - **Lightweight**: Minimal impact on site performance
 - **No Configuration**: Works out of the box
 - **Multisite Compatible**: Works with both single-site and multisite installations
+
+### Perfect For:
+- Content creators who work on multiple posts
+- Editors managing various pages
+- Developers who frequently edit content
+- Anyone who wants to save time navigating WordPress admin
 
 ## Installation
 
@@ -34,6 +41,7 @@ After activation, a "QuickPick" button will appear in your Posts and Pages admin
 ### For Pages
 - Shows the last 5 edited pages
 - Includes special homepage link if a static page is set as homepage
+- Quick "Set as Homepage" action for any published page (one-click with AJAX)
 - Displays page title and last modified date/time
 - Direct links to edit each page
 
@@ -59,9 +67,16 @@ Yes, QuickPick works with both single-site and multisite WordPress installations
 ## Screenshots
 
 1. Posts list with the QuickPick button
-2. Pages list with the QuickPick button showing homepage link
+2. Pages list with the QuickPick button
+3. Page lists showing homepage link
 
 ## Changelog
+
+### 1.0.3
+- Added "Set as Homepage" feature for pages
+- New AJAX functionality to quickly set any published page as the homepage
+- Added action link in pages list to set page as homepage with one click
+- Enhanced page management capabilities
 
 ### 1.0.2
 - Minor fixes

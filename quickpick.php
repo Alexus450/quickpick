@@ -3,7 +3,7 @@
  * Plugin Name:       QuickPick
  * Plugin URI:        https://wordpress.org/plugins/quickpick
  * Description:       QuickPick is a tiny WordPress plugin that will help you to save time on finding just recently editing posts.
- * Version:           1.0.2
+ * Version:           1.0.3
  * Author:            Alexei Samarschi
  * Author URI:        https://profiles.wordpress.org/alexus450/
  * License:           GPL v2 or later
@@ -54,21 +54,26 @@ if( ! class_exists( 'QuickPick' ) ) {
 
 		}
 
-		/**
-		 * Plugin constructor.
-		 *
-		 * @since 1.0.0
-		 */
-		private function __construct() {
+	/**
+	 * Plugin constructor.
+	 *
+	 * @since 1.0.0
+	 */
+	private function __construct() {
 
-			add_action( 'init', array( $this, 'i18n' ) );
-			
-			add_filter( 'views_edit-post', array( $this, 'quickpick_button_posts' ), 99 );
-			add_filter( 'views_edit-page', array( $this, 'quickpick_button_pages' ), 99 );
+		add_action( 'init', array( $this, 'i18n' ) );
+		
+		add_filter( 'views_edit-post', array( $this, 'quickpick_button_posts' ), 99 );
+		add_filter( 'views_edit-page', array( $this, 'quickpick_button_pages' ), 99 );
 
-			add_action( 'admin_head', array( $this, 'quickpick_css') );
+		add_action( 'admin_head', array( $this, 'quickpick_css') );
+		
+		// Add "Set as Homepage" feature
+		add_filter( 'page_row_actions', array( $this, 'filter_admin_row_actions' ), 11, 2 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ), 99 );
+		add_action( 'wp_ajax_quickpick_set_homepage', array( $this, 'set_page_as_homepage' ) );
 
-		}
+	}
 
 		/**
 		 * Load Textdomain
@@ -84,26 +89,26 @@ if( ! class_exists( 'QuickPick' ) ) {
 			load_plugin_textdomain( 'quickpick', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 		}
 
-		/**
-		 * Check if the front page exists and add it's link to the QuickPick
-		 *
-		 * @since 1.0.0
-		 * @return void
-		 */
-		public function get_frontpage_edit_link() {
+	/**
+	 * Check if the homepage exists and add it's link to the QuickPick
+	 *
+	 * @since 1.0.0
+	 * @return void
+	 */
+	public function get_homepage_edit_link() {
 
-			$frontpage_id = get_option( 'page_on_front' );
-			$out = esc_html__( 'No Front Page', 'quickpick' ); 
-			if( empty( $frontpage_id ) ) {
-				return $out;
-			}
-			$frontpage_link = get_edit_post_link( $frontpage_id );
-			$frontpage_title = get_the_title( $frontpage_id );
-			$out = sprintf( '<a href="%s">%s</a>', $frontpage_link, $frontpage_title );
-
+		$homepage_id = get_option( 'page_on_front' );
+		$out = esc_html__( 'No Homepage', 'quickpick' ); 
+		if( empty( $homepage_id ) ) {
 			return $out;
-
 		}
+		$homepage_link = get_edit_post_link( $homepage_id );
+		$homepage_title = get_the_title( $homepage_id );
+		$out = sprintf( '<a href="%s">%s</a>', $homepage_link, $homepage_title );
+
+		return $out;
+
+	}
 
 		/**
 		 * Add post's list to the QuickPick
@@ -144,17 +149,17 @@ if( ! class_exists( 'QuickPick' ) ) {
 				return $views;
 			}
 
-			$desc = '<small>' . esc_html__( 'this page is set as homepage', 'quickpick' ) . '</small>';
-			$frontpage_id = get_option( 'page_on_front' );
-			if( empty( $frontpage_id ) ) {
-				$desc = '';
-			}
+		$desc = '<small>' . esc_html__( 'this page is set as homepage', 'quickpick' ) . '</small>';
+		$homepage_id = get_option( 'page_on_front' );
+		if( empty( $homepage_id ) ) {
+			$desc = '';
+		}
 
-			$out = '<label class="qp-dropdown">
-						<div class="qp-button">QuikPick</div>
-						<input type="checkbox" class="qp-input" id="quickpick-input">
-						<ul class="qp-menu">
-							<li class="homepage-link">' . $this->get_frontpage_edit_link() . $desc . '</li>
+		$out = '<label class="qp-dropdown">
+					<div class="qp-button">QuikPick</div>
+					<input type="checkbox" class="qp-input" id="quickpick-input">
+					<ul class="qp-menu">
+						<li class="homepage-link">' . $this->get_homepage_edit_link() . $desc . '</li>
 							<li>' . $this->last_updated_pages() . '</li>
 							<li class="divider"></li>
 						</ul>
@@ -237,6 +242,126 @@ if( ! class_exists( 'QuickPick' ) ) {
 			wp_reset_postdata(); 
 
 		} 
+
+		/**
+		 * Add/Remove edit link in dashboard.
+		 *
+		 * Add or remove an edit link to the page action links on the pages list table.
+		 *
+		 * Fired by 'page_row_actions' filter.
+		 *
+		 * @since 1.0.3
+		 * @access public
+		 *
+		 * @param array    $actions An array of row action links.
+		 * @param WP_Post  $post    The post object.
+		 *
+		 * @return array An updated array of row action links.
+		 */
+		public function filter_admin_row_actions( $actions, $post ) {
+
+		// Make sure the page is published
+		if( 'publish' !== $post->post_status ) {
+			return $actions;
+		}
+		
+		// Check if the page is not homepage already
+		if( 'page' == get_option( 'show_on_front' ) && $post->ID == get_option( 'page_on_front' ) ) {
+			return $actions;
+		}
+
+		// Add our link with icon
+		$actions['quickpick_set_as_homepage'] = sprintf(			
+			'<a class="quickpick-set-homepage" href="#" data-page-id="%1$d" data-nonce="%2$s" title="%3$s" aria-label="%3$s"><span class="dashicons dashicons-admin-home"></span></a>',
+			$post->ID,
+			wp_create_nonce( 'quickpick-set-homepage' ),
+			esc_attr__( 'Set as Homepage', 'quickpick' )
+		);
+
+			return $actions;
+
+		}
+
+	/**
+	 * Set page as homepage via AJAX
+	 *
+	 * @since 1.0.3
+	 * @access public
+	 *
+	 * @return void
+	 */
+	public function set_page_as_homepage() {
+
+		if( ! wp_verify_nonce( $_POST['nonce'], 'quickpick-set-homepage' ) ) {
+				wp_send_json_error( array( 'message' => esc_html__( 'Security check failed', 'quickpick' ) ) );
+				return;
+			}
+
+			if( isset( $_POST['page_id'] ) ) {
+				$page_id = absint( $_POST['page_id'] );
+			} else {
+				wp_send_json_error( array( 'message' => esc_html__( 'Invalid page ID', 'quickpick' ) ) );
+				return;
+			}
+
+			if( !current_user_can( 'edit_pages' ) ) {
+				wp_send_json_error( array( 'message' => esc_html__( 'You do not have permission to perform this action', 'quickpick' ) ) );
+				return;
+			}
+
+			if( !empty( $page_id ) ) {
+				update_option( 'show_on_front', 'page' );
+				update_option( 'page_on_front', $page_id );
+				wp_send_json_success( array( 'message' => esc_html__( 'Page set as homepage successfully', 'quickpick' ) ) );
+			} else {
+				wp_send_json_error( array( 'message' => esc_html__( 'Invalid page ID', 'quickpick' ) ) );
+			}
+
+		}
+
+		/**
+		 * Enqueue plugin scripts and styles
+		 *
+		 * @since 1.0.3
+		 * @access public
+		 *
+		 * @return void
+		 */
+		public function enqueue_scripts() {
+			
+			// Only enqueue on pages list screen
+			$screen = get_current_screen();
+			if ( ! $screen || 'edit-page' !== $screen->id ) {
+				return;
+			}
+
+		// Enqueue CSS
+		wp_enqueue_style( 
+			'quickpick-homepage', 
+			plugins_url( '/assets/css/quickpick-homepage.css', __FILE__ ), 
+			array(),
+			'1.0.3'
+		);
+
+		// Enqueue JS
+		wp_enqueue_script( 
+			'quickpick-homepage-js', 
+			plugins_url( '/assets/js/quickpick-homepage.js', __FILE__ ), 
+			array( 'jquery' ), 
+			'1.0.3',
+			true 
+		);
+
+		wp_localize_script(
+			'quickpick-homepage-js',
+			'QuickPickHomepage',
+			array(
+				'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
+				'ajax_nonce' => wp_create_nonce( 'quickpick-set-homepage' ),
+			)
+		);
+
+		}
 
 		/**
 		 * Add style to the quickpick button and dropdown block

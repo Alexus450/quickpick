@@ -1,0 +1,21 @@
+/**
+ * QuickPick - Set as Homepage styles
+ * 
+ * @package QuickPick
+ * @since 1.0.3
+ */
+
+.quickpick-set-homepage {
+	color: #2271b1;
+	text-decoration: none;
+}
+
+.quickpick-set-homepage:hover {
+	color: #135e96;
+}
+
+.quickpick-set-homepage:focus {
+	box-shadow: none;
+	outline: none;
+}
+

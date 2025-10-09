@@ -1,0 +1,35 @@
+/**
+ * QuickPick - Set as Homepage styles
+ * 
+ * @package QuickPick
+ * @since 1.0.3
+ */
+
+.quickpick-set-homepage {
+	color: #2271b1;
+	text-decoration: none;
+	display: inline-flex;
+	align-items: center;
+	vertical-align: text-bottom;
+}
+
+.quickpick-set-homepage .dashicons {
+	width: 18px;
+	height: 18px;
+	font-size: 18px;
+	line-height: 1;
+}
+
+.quickpick-set-homepage:hover {
+	color: #135e96;
+}
+
+.quickpick-set-homepage:hover .dashicons {
+	color: #135e96;
+}
+
+.quickpick-set-homepage:focus {
+	box-shadow: none;
+	outline: none;
+}
+
