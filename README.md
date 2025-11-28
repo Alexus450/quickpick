@@ -72,6 +72,10 @@ Yes, QuickPick works with both single-site and multisite WordPress installations
 
 ## Changelog
 
+### 1.0.4
+- Minor fix
+- Compatibility WordPress Version 6.9
+
 ### 1.0.3
 - Added "Set as Homepage" feature for pages
 - New AJAX functionality to quickly set any published page as the homepage

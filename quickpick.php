@@ -3,7 +3,7 @@
  * Plugin Name:       QuickPick
  * Plugin URI:        https://wordpress.org/plugins/quickpick
  * Description:       QuickPick is a tiny WordPress plugin that will help you to save time on finding just recently editing posts.
- * Version:           1.0.3
+ * Version:           1.0.4
  * Author:            Alexei Samarschi
  * Author URI:        https://profiles.wordpress.org/alexus450/
  * License:           GPL v2 or later
@@ -12,7 +12,7 @@
  * Domain Path:       /languages
  * Requires at least: 5.0
  * Requires PHP:      5.6
- * Tested up to:      6.8
+ * Tested up to:      6.9
  * Update URI:        https://wordpress.org/plugins/quickpick/
  */
 
@@ -195,7 +195,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 
 				$out .= '<li>
 							<a href="' . get_edit_post_link( $query->post->ID ) . '"> 
-								' . get_the_title( $query->post->ID ) . '  <span>' . esc_html__( 'edited:', 'quickpick' ) . ' ' . get_the_modified_date() . ' ' . esc_html__( 'at', 'quickpick' ) . ' ' . get_the_modified_time() . '</span>
+								' . get_the_title( $query->post->ID ) . '  <span>' . esc_html__( 'edited:', 'quickpick' ) . ' ' . get_the_modified_date( 'Y/m/d' ) . ' ' . esc_html__( 'at', 'quickpick' ) . ' ' . get_the_modified_time() . '</span>
 							</a>
 						</li>';
 			endwhile; 
@@ -231,7 +231,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 
 				$out .= '<li>
 							<a href="' . get_edit_post_link( $query->post->ID ) . '"> 
-								' . get_the_title( $query->post->ID ) . '  <span>' . esc_html__( 'edited:', 'quickpick' ) . ' ' . get_the_modified_date() . ' ' . esc_html__( 'at', 'quickpick' ) . ' ' . get_the_modified_time() . '</span>
+								' . get_the_title( $query->post->ID ) . '  <span>' . esc_html__( 'edited:', 'quickpick' ) . ' ' . get_the_modified_date( 'Y/m/d' ) . ' ' . esc_html__( 'at', 'quickpick' ) . ' ' . get_the_modified_time() . '</span>
 							</a>
 						</li>';
 			endwhile; 
