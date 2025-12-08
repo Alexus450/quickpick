@@ -1,16 +1,7 @@
-
-# Composer dependencies
-/vendor/
-
-# OS Files
+node_modules/
+*.js.map
+*.css.map
+package-lock.json
 .DS_Store
-
-# IDE Files
-.idea/
-.vscode/
-
-# Build artifacts
-/thumbs
-
-# Documentation
-CLAUDE.md
+package-lock.json
+node_modules
