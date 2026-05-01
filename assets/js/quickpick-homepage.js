@@ -9,6 +9,47 @@
 	'use strict';
 
 	$(document).ready(function() {
+		function showAdminNotice(message, type) {
+			var noticeType = type || 'error';
+			var $notice = $('<div class="notice notice-' + noticeType + ' is-dismissible"><p></p></div>');
+			$notice.find('p').text(message);
+			$('.wrap h1').first().after($notice);
+		}
+
+		function closeAllQuickPickMenus() {
+			$('[data-qp-dropdown]').each(function() {
+				var $dropdown = $(this);
+				$dropdown.find('.qp-button').attr('aria-expanded', 'false');
+				$dropdown.find('.qp-menu').attr('hidden', 'hidden');
+			});
+		}
+
+		$(document).on('click', '.qp-button', function(e) {
+			e.preventDefault();
+			var $button = $(this);
+			var $dropdown = $button.closest('[data-qp-dropdown]');
+			var $menu = $dropdown.find('.qp-menu');
+			var expanded = $button.attr('aria-expanded') === 'true';
+
+			closeAllQuickPickMenus();
+
+			if (!expanded) {
+				$button.attr('aria-expanded', 'true');
+				$menu.removeAttr('hidden');
+			}
+		});
+
+		$(document).on('click', function(e) {
+			if (!$(e.target).closest('[data-qp-dropdown]').length) {
+				closeAllQuickPickMenus();
+			}
+		});
+
+		$(document).on('keydown', function(e) {
+			if (e.key === 'Escape') {
+				closeAllQuickPickMenus();
+			}
+		});
 		
 		// Handle "Set as Homepage" click
 		$(document).on('click', '.quickpick-set-homepage', function(e) {
@@ -19,8 +60,9 @@
 			var nonce = $link.data('nonce');
 			
 			// Show loading state
-			var originalText = $link.text();
-			$link.text('Setting...');
+			var $label = $link.find('.quickpick-label');
+			var originalText = $label.text();
+			$label.text(QuickPickHomepage.settingText);
 			$link.css('pointer-events', 'none');
 			
 			// Send AJAX request
@@ -34,17 +76,19 @@
 				},
 				success: function(response) {
 					if (response.success) {
-						// Reload the page to update the UI
-						location.reload();
+						showAdminNotice(response.data.message || QuickPickHomepage.successText, 'success');
+						window.setTimeout(function() {
+							window.location.href = QuickPickHomepage.successRedirect;
+						}, 800);
 					} else {
-						alert(response.data.message || 'An error occurred');
-						$link.text(originalText);
+						showAdminNotice(response.data.message || QuickPickHomepage.errorGenericText, 'error');
+						$label.text(originalText);
 						$link.css('pointer-events', 'auto');
 					}
 				},
 				error: function() {
-					alert('An error occurred. Please try again.');
-					$link.text(originalText);
+					showAdminNotice(QuickPickHomepage.errorGenericText, 'error');
+					$label.text(originalText);
 					$link.css('pointer-events', 'auto');
 				}
 			});

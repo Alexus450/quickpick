@@ -5,7 +5,7 @@ Tags: recently edited, quick access, admin, homepage, productivity
 Requires at least: 5.0
 Requires PHP: 5.6
 Tested up to: 6.9
-Stable tag: 1.0.4
+Stable tag: 1.0.5
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -20,6 +20,8 @@ QuickPick displays your last 5 edited posts or pages in a convenient dropdown me
 * Clean, intuitive dropdown interface
 * Homepage link integration for pages
 * Set any page as homepage with one click (AJAX-powered)
+* Settings page with item count and visibility options
+* Enable QuickPick for supported custom post types
 * Lightweight and fast
 * No configuration required
 
@@ -42,7 +44,7 @@ QuickPick displays your last 5 edited posts or pages in a convenient dropdown me
 
 = Does this plugin work with custom post types? =
 
-Currently, QuickPick works with standard posts and pages. Custom post type support may be added in future versions.
+Yes. From version 1.0.5 you can enable QuickPick for supported post types in Settings > QuickPick.
 
 = How many items does QuickPick show? =
 
@@ -63,6 +65,15 @@ Yes, QuickPick works with both single-site and multisite WordPress installations
 3. Pages list with the button showing homepage link
 
 == Changelog ==
+
+= 1.0.5 =
+* Added QuickPick settings page under Settings > QuickPick
+* Added options for item limit, "only my content", and enabled post types (including custom post types)
+* Improved dropdown accessibility and keyboard behavior
+* Replaced browser alerts with WordPress admin notices for better UX
+* Hardened permissions and output escaping
+* Improved query performance and fixed postdata reset behavior
+* Updated branding text from "QuikPick" to "QuickPick"
 
 = 1.0.4 =
 * Minor fix

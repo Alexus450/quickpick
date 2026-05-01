@@ -3,7 +3,7 @@
  * Plugin Name:       QuickPick
  * Plugin URI:        https://wordpress.org/plugins/quickpick
  * Description:       QuickPick is a tiny WordPress plugin that will help you to save time on finding just recently editing posts.
- * Version:           1.0.4
+ * Version:           1.0.5
  * Author:            Alexei Samarschi
  * Author URI:        https://profiles.wordpress.org/alexus450/
  * License:           GPL v2 or later
@@ -16,9 +16,15 @@
  * Update URI:        https://wordpress.org/plugins/quickpick/
  */
 
-//Exit if accessed directly
-if( ! defined( 'ABSPATH' ) ) 
+ // Prevent direct access
+ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+// Define plugin constants
+if ( ! defined( 'QUICKPICK_VERSION' ) ) {
+	define( 'QUICKPICK_VERSION', get_file_data( __FILE__, [ 'Version' ] )[0] ); // phpcs:ignore
+}
 
 if( ! class_exists( 'QuickPick' ) ) {
 	/**
@@ -62,16 +68,15 @@ if( ! class_exists( 'QuickPick' ) ) {
 	private function __construct() {
 
 		add_action( 'init', array( $this, 'i18n' ) );
-		
-		add_filter( 'views_edit-post', array( $this, 'quickpick_button_posts' ), 99 );
-		add_filter( 'views_edit-page', array( $this, 'quickpick_button_pages' ), 99 );
+		add_action( 'admin_init', array( $this, 'register_settings' ) );
+		add_action( 'admin_menu', array( $this, 'register_settings_page' ) );
+		add_action( 'admin_init', array( $this, 'register_views_filters' ) );
 
-		add_action( 'admin_head', array( $this, 'quickpick_css') );
-		
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ), 20 );
 		// Add "Set as Homepage" feature
 		add_filter( 'page_row_actions', array( $this, 'filter_admin_row_actions' ), 11, 2 );
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ), 99 );
 		add_action( 'wp_ajax_quickpick_set_homepage', array( $this, 'set_page_as_homepage' ) );
+		add_action( 'admin_notices', array( $this, 'render_success_notice' ) );
 
 	}
 
@@ -98,78 +103,63 @@ if( ! class_exists( 'QuickPick' ) ) {
 	public function get_homepage_edit_link() {
 
 		$homepage_id = get_option( 'page_on_front' );
+		$show_on_front = get_option( 'show_on_front' );
 		$out = esc_html__( 'No Homepage', 'quickpick' ); 
-		if( empty( $homepage_id ) ) {
+		if ( 'page' !== $show_on_front || empty( $homepage_id ) ) {
 			return $out;
 		}
 		$homepage_link = get_edit_post_link( $homepage_id );
 		$homepage_title = get_the_title( $homepage_id );
-		$out = sprintf( '<a href="%s">%s</a>', $homepage_link, $homepage_title );
+		$out = sprintf( '<a href="%s">%s</a>', esc_url( $homepage_link ), esc_html( $homepage_title ) );
 
 		return $out;
 
 	}
 
-		/**
-		 * Add post's list to the QuickPick
-		 *
-		 * @since 1.0.0
-		 * @return void
-		 */
-		public function quickpick_button_posts( $views ) {
+	public function register_views_filters() {
+		foreach ( $this->get_enabled_post_types() as $post_type ) {
+			add_filter(
+				'views_edit-' . $post_type,
+				function( $views ) use ( $post_type ) {
+					return $this->quickpick_button_for_post_type( $views, $post_type );
+				},
+				99
+			);
+		}
+	}
 
-			if( ! current_user_can( 'edit_posts' ) ) {
-				return $views;
-			}
-
-			$out = '<label class="qp-dropdown">
-						<div class="qp-button">QuikPick</div>
-						<input type="checkbox" class="qp-input" id="quickpick-input">
-						<ul class="qp-menu">
-							<li>' . $this->last_updated_posts() . '</li>
-							<li class="divider"></li>
-						</ul>
-						</label>';
-
-			$views['quickpick'] = $out;
-
+	public function quickpick_button_for_post_type( $views, $post_type ) {
+		$post_type_obj = get_post_type_object( $post_type );
+		if ( ! $post_type_obj || ! current_user_can( $post_type_obj->cap->edit_posts ) ) {
 			return $views;
-		
 		}
 
-		/**
-		 * Add page's list to the QuickPick
-		 *
-		 * @since 1.0.0
-		 * @return void
-		 */
-		public function quickpick_button_pages( $views ) {
+		$menu_id = 'quickpick-menu-' . sanitize_html_class( $post_type );
+		$content = '';
 
-			if( ! current_user_can( 'edit_pages' ) ) {
-				return $views;
+		if ( 'page' === $post_type ) {
+			$desc = '<small>' . esc_html__( 'this page is set as homepage', 'quickpick' ) . '</small>';
+			if ( empty( get_option( 'page_on_front' ) ) ) {
+				$desc = '';
 			}
-
-		$desc = '<small>' . esc_html__( 'this page is set as homepage', 'quickpick' ) . '</small>';
-		$homepage_id = get_option( 'page_on_front' );
-		if( empty( $homepage_id ) ) {
-			$desc = '';
+			$content .= '<li class="homepage-link">' . $this->get_homepage_edit_link() . $desc . '</li>';
+			$content .= '<li class="divider"></li>';
 		}
 
-		$out = '<label class="qp-dropdown">
-					<div class="qp-button">QuikPick</div>
-					<input type="checkbox" class="qp-input" id="quickpick-input">
-					<ul class="qp-menu">
-						<li class="homepage-link">' . $this->get_homepage_edit_link() . $desc . '</li>
-							<li>' . $this->last_updated_pages() . '</li>
-							<li class="divider"></li>
-						</ul>
-						</label>';
+		$content .= '<li>' . $this->last_updated_items( $post_type ) . '</li>';
 
-			$views['quickpick'] = $out;
+		$views['quickpick'] = sprintf(
+			'<div class="qp-dropdown" data-qp-dropdown>
+				<button type="button" class="qp-button" aria-expanded="false" aria-controls="%1$s">%2$s</button>
+				<ul class="qp-menu" id="%1$s" hidden>%3$s</ul>
+			</div>',
+			esc_attr( $menu_id ),
+			esc_html__( 'QuickPick', 'quickpick' ),
+			$content
+		);
 
-			return $views;
-		
-		}
+		return $views;
+	}
 
 		/**
 		 * Get 5 last modified/edited posts
@@ -177,71 +167,57 @@ if( ! class_exists( 'QuickPick' ) ) {
 		 * @since 1.0.0
 		 * @return void
 		 */
-		public function last_updated_posts() { 
-
-			// Query Arguments
-			$args = array(
-				'orderby'             => 'modified',
-				'ignore_sticky_posts' => '1',
-				'posts_per_page'      => '5'
-			);
-			 
-			//Loop to display 5 recently updated posts
-			$query = new WP_Query( $args );
-			
-			$out = '<ul>';	
-
-			while( $query->have_posts() ) : $query->the_post();
-
-				$out .= '<li>
-							<a href="' . get_edit_post_link( $query->post->ID ) . '"> 
-								' . get_the_title( $query->post->ID ) . '  <span>' . esc_html__( 'edited:', 'quickpick' ) . ' ' . get_the_modified_date( 'Y/m/d' ) . ' ' . esc_html__( 'at', 'quickpick' ) . ' ' . get_the_modified_time() . '</span>
-							</a>
-						</li>';
-			endwhile; 
-
-			$out .= '</ul>';
-			return $out;
-			
-			wp_reset_postdata(); 
-
+	public function last_updated_items( $post_type ) {
+		$limit = absint( get_option( 'quickpick_items_limit', 5 ) );
+		if ( $limit < 1 ) {
+			$limit = 5;
 		}
 
-		/**
-		 * Get 5 last modified/edited pages
-		 *
-		 * @since 1.0.0
-		 * @return void
-		 */
-		public function last_updated_pages() { 
+		$args = array(
+			'post_type'              => $post_type,
+			'orderby'                => 'modified',
+			'posts_per_page'         => $limit,
+			'no_found_rows'          => true,
+			'perm'                   => 'editable',
+			'ignore_sticky_posts'    => true,
+			'post_status'            => array( 'publish', 'future', 'draft', 'pending', 'private' ),
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		);
 
-			// Query Arguments
-			$args = array(
-				'post_type'      => 'page',
-				'orderby'        => 'modified',
-				'posts_per_page' => '5'
+		if ( get_option( 'quickpick_only_mine', 0 ) ) {
+			$args['author'] = get_current_user_id();
+		}
+
+		$query = new WP_Query( $args );
+		$out   = '<ul>';
+
+		if ( ! $query->have_posts() ) {
+			$out .= '<li class="qp-empty">' . esc_html__( 'No recent content found.', 'quickpick' ) . '</li>';
+		}
+
+		while ( $query->have_posts() ) :
+			$query->the_post();
+			$edit_link = get_edit_post_link( $query->post->ID );
+			if ( empty( $edit_link ) ) {
+				continue;
+			}
+			$out .= sprintf(
+				'<li><a href="%1$s">%2$s <span>%3$s %4$s %5$s %6$s</span></a></li>',
+				esc_url( $edit_link ),
+				esc_html( get_the_title( $query->post->ID ) ),
+				esc_html__( 'edited:', 'quickpick' ),
+				esc_html( get_the_modified_date( 'Y/m/d', $query->post->ID ) ),
+				esc_html__( 'at', 'quickpick' ),
+				esc_html( get_the_modified_time( '', $query->post->ID ) )
 			);
-			 
-			//Loop to display 5 recently updated pages
-			$query = new WP_Query( $args );
+		endwhile;
 
-			$out = '<ul>';	
+		wp_reset_postdata();
 
-			while( $query->have_posts() ) : $query->the_post();
-
-				$out .= '<li>
-							<a href="' . get_edit_post_link( $query->post->ID ) . '"> 
-								' . get_the_title( $query->post->ID ) . '  <span>' . esc_html__( 'edited:', 'quickpick' ) . ' ' . get_the_modified_date( 'Y/m/d' ) . ' ' . esc_html__( 'at', 'quickpick' ) . ' ' . get_the_modified_time() . '</span>
-							</a>
-						</li>';
-			endwhile; 
-
-			$out .= '</ul>';
-			return $out;
-			
-			wp_reset_postdata(); 
-
-		} 
+		$out .= '</ul>';
+		return $out;
+	}
 
 		/**
 		 * Add/Remove edit link in dashboard.
@@ -259,6 +235,9 @@ if( ! class_exists( 'QuickPick' ) ) {
 		 * @return array An updated array of row action links.
 		 */
 		public function filter_admin_row_actions( $actions, $post ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return $actions;
+		}
 
 		// Make sure the page is published
 		if( 'publish' !== $post->post_status ) {
@@ -272,10 +251,11 @@ if( ! class_exists( 'QuickPick' ) ) {
 
 		// Add our link with icon
 		$actions['quickpick_set_as_homepage'] = sprintf(			
-			'<a class="quickpick-set-homepage" href="#" data-page-id="%1$d" data-nonce="%2$s" title="%3$s" aria-label="%3$s"><span class="dashicons dashicons-admin-home"></span></a>',
+			'<a class="quickpick-set-homepage" href="#" data-page-id="%1$d" data-nonce="%2$s" title="%3$s" aria-label="%3$s"><span class="dashicons dashicons-admin-home"></span><span class="quickpick-label">%4$s</span></a>',
 			$post->ID,
 			wp_create_nonce( 'quickpick-set-homepage' ),
-			esc_attr__( 'Set as Homepage', 'quickpick' )
+			esc_attr__( 'Set as Homepage', 'quickpick' ),
+			esc_html__( 'Set as Homepage', 'quickpick' )
 		);
 
 			return $actions;
@@ -292,19 +272,16 @@ if( ! class_exists( 'QuickPick' ) ) {
 	 */
 	public function set_page_as_homepage() {
 
-		if( ! wp_verify_nonce( $_POST['nonce'], 'quickpick-set-homepage' ) ) {
-				wp_send_json_error( array( 'message' => esc_html__( 'Security check failed', 'quickpick' ) ) );
-				return;
-			}
+		check_ajax_referer( 'quickpick-set-homepage', 'nonce' );
 
 			if( isset( $_POST['page_id'] ) ) {
-				$page_id = absint( $_POST['page_id'] );
+				$page_id = absint( wp_unslash( $_POST['page_id'] ) );
 			} else {
 				wp_send_json_error( array( 'message' => esc_html__( 'Invalid page ID', 'quickpick' ) ) );
 				return;
 			}
 
-			if( !current_user_can( 'edit_pages' ) ) {
+			if( ! current_user_can( 'manage_options' ) ) {
 				wp_send_json_error( array( 'message' => esc_html__( 'You do not have permission to perform this action', 'quickpick' ) ) );
 				return;
 			}
@@ -327,37 +304,46 @@ if( ! class_exists( 'QuickPick' ) ) {
 		 *
 		 * @return void
 		 */
-		public function enqueue_scripts() {
-			
-			// Only enqueue on pages list screen
+		public function enqueue_admin_assets() {
 			$screen = get_current_screen();
-			if ( ! $screen || 'edit-page' !== $screen->id ) {
+			if ( ! $screen ) {
 				return;
 			}
 
-		// Enqueue CSS
-		wp_enqueue_style( 
-			'quickpick-homepage', 
-			plugins_url( '/assets/css/quickpick-homepage.css', __FILE__ ), 
+			$is_edit_screen     = 0 === strpos( $screen->id, 'edit-' );
+			$is_settings_screen = 'settings_page_quickpick-settings' === $screen->id;
+			if ( ! $is_edit_screen && ! $is_settings_screen ) {
+				return;
+			}
+
+		wp_enqueue_style(
+			'quickpick-homepage',
+			plugins_url( '/assets/css/quickpick-homepage.css', __FILE__ ),
 			array(),
-			'1.0.3'
+			QUICKPICK_VERSION
 		);
 
-		// Enqueue JS
-		wp_enqueue_script( 
-			'quickpick-homepage-js', 
-			plugins_url( '/assets/js/quickpick-homepage.js', __FILE__ ), 
-			array( 'jquery' ), 
-			'1.0.3',
-			true 
+		if ( ! $is_edit_screen ) {
+			return;
+		}
+
+		wp_enqueue_script(
+			'quickpick-homepage-js',
+			plugins_url( '/assets/js/quickpick-homepage.js', __FILE__ ),
+			array( 'jquery' ),
+			QUICKPICK_VERSION,
+			true
 		);
 
 		wp_localize_script(
 			'quickpick-homepage-js',
 			'QuickPickHomepage',
 			array(
-				'ajaxUrl'    => admin_url( 'admin-ajax.php' ),
-				'ajax_nonce' => wp_create_nonce( 'quickpick-set-homepage' ),
+				'ajaxUrl'          => admin_url( 'admin-ajax.php' ),
+				'successRedirect'  => add_query_arg( 'quickpick_homepage_set', '1', admin_url( 'edit.php?post_type=page' ) ),
+				'settingText'      => esc_html__( 'Setting...', 'quickpick' ),
+				'successText'      => esc_html__( 'Homepage updated successfully.', 'quickpick' ),
+				'errorGenericText' => esc_html__( 'An error occurred. Please try again.', 'quickpick' ),
 			)
 		);
 
@@ -369,110 +355,135 @@ if( ! class_exists( 'QuickPick' ) ) {
 		 * @since 1.0.0
 		 * @return void
 		 */
-		public function quickpick_css() {
-			
-			$assets_url = plugins_url( '/assets', __FILE__ );
+		public function render_success_notice() {
+			if ( ! isset( $_GET['quickpick_homepage_set'] ) || '1' !== sanitize_text_field( wp_unslash( $_GET['quickpick_homepage_set'] ) ) ) {
+				return;
+			}
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Homepage updated successfully.', 'quickpick' ) . '</p></div>';
+		}
 
-			echo "<style type='text/css'>
-						.qp-dropdown {
-							display: inline-block;
-							position: relative;							
-						}
-						.qp-button {
-							display: inline-block;
-							border-radius: 5px;
-							padding: 5px 30px 5px 15px;
-							background-color: #ffffff;
-							cursor: pointer;
-							white-space: nowrap;
-							margin-left:5px;
-							background-image:url( {$assets_url}/images/quickpick.png );
-							background-position:10px center;
-							background-repeat:no-repeat;
-							background-size:20px;
-							padding-left:35px;
+		public function register_settings() {
+			register_setting( 'quickpick_settings_group', 'quickpick_items_limit', array( $this, 'sanitize_items_limit' ) );
+			register_setting( 'quickpick_settings_group', 'quickpick_only_mine', array( $this, 'sanitize_checkbox' ) );
+			register_setting( 'quickpick_settings_group', 'quickpick_enabled_post_types', array( $this, 'sanitize_post_types' ) );
+		}
 
-						}
-						.qp-button:after {
-							content: '';
-							position: absolute;
-							top: 50%;
-							right: 10px;
-							transform: translateY(-50%);
-							width: 0; 
-							height: 0; 
-							border-left: 5px solid transparent;
-							border-right: 5px solid transparent;
-							border-top: 5px solid black;
-						}
-						.qp-button:hover:after {
-							border-top-color:#fff;
-						}
-						.qp-button:hover {
-							background-color: #444857;
-							color:#fff;
-						}
-						.qp-input {
-							display: none !important;
-						}
-						.qp-menu {
-							position: absolute;
-							top: 100%;
-							border-radius: 5px;
-							padding: 0;
-							margin: 2px 0 0 0;
-							box-shadow: 1px 2px 5px 1px rgba(178.5, 178.5, 178.5, 0.5607843137254902);
-							background-color: #ffffff;
-							list-style-type: none;
-						}
-						.qp-input + .qp-menu {
-							display: none;
-						} 
-						.qp-input:checked + .qp-menu {
-							display: block;
-						} 
-						.qp-menu li {
-							white-space: nowrap;
-							display:block;
-						}
-						.qp-menu li.homepage-link {
-							padding:15px 20px;
-							font-weight:bold;
-						}
-						.qp-menu li.homepage-link small {
-							font-weight:normal;
-							padding-left:.2em;
-						}
-						.qp-menu li.homepage-link a {
-							padding-bottom:0px;
-							line-height:15px;
-						}
-						.qp-menu li a {
-							display: block;
-						}
-						.qp-menu li.divider{
-							padding: 0;
-							border-bottom: 1px solid #cccccc;
-						}
-						.qp-menu li ul li {
-							display:block;
-							padding: 13px 20px;
-						}
-						.qp-menu li ul > :nth-child(2n+1) {
-							background-color:#f6f7f7;
-						}
-						.qp-menu li ul li a {
-							display:block;
-							margin:0px;
-							padding:0px;
-							line-height:1.45em;
-						}
-						.qp-menu li ul li a > span {
-							color:#50575e;
-							display:block;
-						}
-					</style>";
+		public function sanitize_items_limit( $value ) {
+			$value = absint( $value );
+			if ( $value < 1 ) {
+				$value = 5;
+			}
+			if ( $value > 20 ) {
+				$value = 20;
+			}
+			return $value;
+		}
 
+		public function sanitize_checkbox( $value ) {
+			return empty( $value ) ? 0 : 1;
+		}
+
+		public function sanitize_post_types( $types ) {
+			$types = is_array( $types ) ? array_map( 'sanitize_key', $types ) : array( 'post', 'page' );
+			$allowed = array_keys( $this->get_available_post_types( false ) );
+			$types = array_values( array_intersect( $types, $allowed ) );
+			return empty( $types ) ? array( 'post', 'page' ) : $types;
+		}
+
+		public function register_settings_page() {
+			add_options_page(
+				esc_html__( 'QuickPick Settings', 'quickpick' ),
+				esc_html__( 'QuickPick', 'quickpick' ),
+				'manage_options',
+				'quickpick-settings',
+				array( $this, 'render_settings_page' )
+			);
+		}
+
+		public function render_settings_page() {
+			if ( ! current_user_can( 'manage_options' ) ) {
+				return;
+			}
+
+			$post_types = $this->get_available_post_types( true );
+			$enabled    = $this->get_enabled_post_types();
+			$icon_url   = plugins_url( '/assets/images/quickpick.png', __FILE__ );
+			?>
+			<div class="wrap">
+				<h1 class="qp-settings-title">
+					<img src="<?php echo esc_url( $icon_url ); ?>" alt="" width="24" height="24" />
+					<?php esc_html_e( 'QuickPick Settings', 'quickpick' ); ?>
+				</h1>
+				<form method="post" action="options.php">
+					<?php settings_fields( 'quickpick_settings_group' ); ?>
+					<table class="form-table" role="presentation">
+						<tr>
+							<th scope="row"><label for="quickpick_items_limit"><?php esc_html_e( 'Number of items', 'quickpick' ); ?></label></th>
+							<td><input id="quickpick_items_limit" name="quickpick_items_limit" type="number" min="1" max="20" value="<?php echo esc_attr( absint( get_option( 'quickpick_items_limit', 5 ) ) ); ?>" class="small-text" /></td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Content scope', 'quickpick' ); ?></th>
+							<td><label><input name="quickpick_only_mine" type="checkbox" value="1" <?php checked( 1, absint( get_option( 'quickpick_only_mine', 0 ) ) ); ?> /> <?php esc_html_e( 'Show only content edited by current user', 'quickpick' ); ?></label></td>
+						</tr>
+						<tr>
+							<th scope="row"><?php esc_html_e( 'Enabled post types', 'quickpick' ); ?></th>
+							<td>
+								<?php if ( ! empty( $post_types ) ) : ?>
+									<?php foreach ( $post_types as $post_type ) : ?>
+										<label style="display:block;margin-bottom:6px;">
+											<input type="checkbox" name="quickpick_enabled_post_types[]" value="<?php echo esc_attr( $post_type->name ); ?>" <?php checked( in_array( $post_type->name, $enabled, true ) ); ?> />
+											<?php echo esc_html( $post_type->labels->name ); ?>
+										</label>
+									<?php endforeach; ?>
+								<?php else : ?>
+									<p><?php esc_html_e( 'No accessible post types are available for QuickPick.', 'quickpick' ); ?></p>
+								<?php endif; ?>
+								<p class="description"><?php esc_html_e( 'Only post types with accessible edit list screens are shown here.', 'quickpick' ); ?></p>
+							</td>
+						</tr>
+					</table>
+					<?php submit_button(); ?>
+				</form>
+				<hr />
+				<p>
+					<a class="button button-secondary qp-donate-button" href="https://paypal.me/gt330/10usd" target="_blank" rel="noopener noreferrer">
+						<span class="qp-paypal-icon" aria-hidden="true">P</span>
+						<span class="qp-paypal-text"><?php esc_html_e( 'PayPal', 'quickpick' ); ?></span>
+						<span><?php esc_html_e( 'Support QuickPick with a Donation', 'quickpick' ); ?></span>
+					</a>
+				</p>
+			</div>
+			<?php
+		}
+
+		private function get_enabled_post_types() {
+			$default = array( 'post', 'page' );
+			$types   = get_option( 'quickpick_enabled_post_types', $default );
+			return $this->sanitize_post_types( $types );
+		}
+
+		private function get_available_post_types( $require_current_user_access = false ) {
+			$post_types = get_post_types( array( 'show_ui' => true ), 'objects' );
+			$available  = array();
+
+			foreach ( $post_types as $post_type ) {
+				// Exclude post types that do not belong in the standard edit list workflow.
+				if ( 'attachment' === $post_type->name || 0 === strpos( $post_type->name, 'wp_' ) ) {
+					continue;
+				}
+
+				if ( empty( $post_type->cap ) || empty( $post_type->cap->edit_posts ) ) {
+					continue;
+				}
+
+				if ( $require_current_user_access && ! current_user_can( $post_type->cap->edit_posts ) ) {
+					continue;
+				}
+
+				$available[ $post_type->name ] = $post_type;
+			}
+
+			return $available;
 		}
 
 	}

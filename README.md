@@ -13,8 +13,10 @@ QuickPick is a tiny WordPress plugin that helps you save time by quickly accessi
 - **Clean Interface**: Intuitive dropdown menu that matches WordPress admin design
 - **Homepage Integration**: Special homepage link for pages
 - **Set as Homepage**: Set any page as homepage with one click (AJAX-powered)
+- **Flexible Settings**: Configure item limit, visibility scope, and enabled post types
+- **Custom Post Types**: Enable QuickPick for supported post types from plugin settings
 - **Lightweight**: Minimal impact on site performance
-- **No Configuration**: Works out of the box
+- **Sensible Defaults**: Works immediately with optional tuning
 - **Multisite Compatible**: Works with both single-site and multisite installations
 
 ### Perfect For:
@@ -71,6 +73,15 @@ Yes, QuickPick works with both single-site and multisite WordPress installations
 3. Page lists showing homepage link
 
 ## Changelog
+
+### 1.0.5
+- Added a new settings page under `Settings > QuickPick`
+- Added options for item count, "only my content", and enabled post types (including custom post types)
+- Improved dropdown accessibility with proper button semantics and Escape/outside-click closing
+- Replaced browser alerts with WordPress admin notices for AJAX feedback
+- Hardened security checks and output escaping
+- Improved query performance and fixed post data reset flow
+- Updated UI label from `QuikPick` to `QuickPick`
 
 ### 1.0.4
 - Minor fix
