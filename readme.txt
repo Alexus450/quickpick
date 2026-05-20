@@ -4,8 +4,8 @@ Donate link: http://paypal.me/gt330/10usd
 Tags: recently edited, quick access, admin, homepage, productivity
 Requires at least: 5.0
 Requires PHP: 5.6
-Tested up to: 6.9
-Stable tag: 1.0.5
+Tested up to: 7.0
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
@@ -65,6 +65,10 @@ Yes, QuickPick works with both single-site and multisite WordPress installations
 3. Pages list with the button showing homepage link
 
 == Changelog ==
+
+
+= 1.0.6 =
+* Compatibility with WordPress version 7.0
 
 = 1.0.5 =
 * Added QuickPick settings page under Settings > QuickPick

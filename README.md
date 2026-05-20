@@ -74,6 +74,9 @@ Yes, QuickPick works with both single-site and multisite WordPress installations
 
 ## Changelog
 
+### 1.0.6
+- Compatibility with WordPress version 7.0
+
 ### 1.0.5
 - Added a new settings page under `Settings > QuickPick`
 - Added options for item count, "only my content", and enabled post types (including custom post types)
