@@ -10,6 +10,7 @@ QuickPick is a tiny WordPress plugin that helps you save time by quickly accessi
 ## Features
 
 - **Quick Access**: Display recently edited posts and pages in a convenient dropdown
+- **Admin Toolbar**: Jump to recent items from any admin or front-end screen
 - **Clean Interface**: Intuitive dropdown menu that matches WordPress admin design
 - **Homepage Integration**: Special homepage link for pages
 - **Set as Homepage**: Set any page as homepage with one click (AJAX-powered)
@@ -29,11 +30,11 @@ QuickPick is a tiny WordPress plugin that helps you save time by quickly accessi
 
 1. Upload the plugin files to `/wp-content/plugins/quickpick/` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. The "QuickPick" button will appear in your Posts and Pages admin list views.
+3. The "QuickPick" button will appear in your Posts and Pages admin list views, and a QuickPick menu will appear in the admin toolbar.
 
 ## Usage
 
-After activation, a "QuickPick" button will appear in your Posts and Pages admin list views. Click the button to see your recently edited content and quickly jump to edit any item.
+After activation, a "QuickPick" button will appear in your Posts and Pages admin list views, and a QuickPick menu will appear in the admin toolbar. Click either to jump to recently edited content.
 
 ### For Posts
 - Shows the last 5 edited posts
@@ -55,13 +56,13 @@ After activation, a "QuickPick" button will appear in your Posts and Pages admin
 ## Frequently Asked Questions
 
 **Does this plugin work with custom post types?**
-Currently, QuickPick works with standard posts and pages. Custom post type support may be added in future versions.
+Yes. From version 1.0.5 you can enable QuickPick for supported post types in Settings > QuickPick.
 
 **How many items does QuickPick show?**
 QuickPick displays the last 5 edited posts or pages by default.
 
 **Does QuickPick affect site performance?**
-No, QuickPick is lightweight and only loads when you're in the WordPress admin area. It has minimal impact on your site's performance.
+No. QuickPick is lightweight. It loads in the admin area, and on the front end only when the admin toolbar is showing.
 
 **Is QuickPick compatible with WordPress multisite?**
 Yes, QuickPick works with both single-site and multisite WordPress installations.
@@ -73,6 +74,16 @@ Yes, QuickPick works with both single-site and multisite WordPress installations
 3. Page lists showing homepage link
 
 ## Changelog
+
+### 1.0.7
+- Added a QuickPick menu to the WordPress admin toolbar
+- Added a setting to show or hide the admin toolbar menu
+- "Only my content" now filters by the last user who saved the item, not the original author
+- Recent items show untitled fallbacks, post status, and the site date/time format
+- Added a Settings link on the Plugins screen
+- Plugin options are removed on uninstall
+- Redesigned the settings page
+- Compatibility with WordPress version 7.1
 
 ### 1.0.6
 - Compatibility with WordPress version 7.0
