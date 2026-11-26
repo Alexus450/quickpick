@@ -2,7 +2,7 @@
 # This file is distributed under the same license as the QuickPick package.
 msgid ""
 msgstr ""
-"Project-Id-Version: QuickPick 1.0.7\n"
+"Project-Id-Version: QuickPick 1.0.8\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/quickpick\n"
 "POT-Creation-Date: 2026-09-04 00:00:00+00:00\n"
 "MIME-Version: 1.0\n"
@@ -59,13 +59,12 @@ msgstr ""
 msgid "Set as Homepage"
 msgstr ""
 
-#: quickpick.php:288
-#: quickpick.php:302
-msgid "Invalid page ID"
+#: quickpick.php:276
+msgid "You do not have permission to perform this action"
 msgstr ""
 
-#: quickpick.php:293
-msgid "You do not have permission to perform this action"
+#: quickpick.php:283
+msgid "Only a published page can be set as the homepage."
 msgstr ""
 
 #: quickpick.php:300
@@ -159,4 +158,12 @@ msgstr ""
 
 #: quickpick.php:621
 msgid "PayPal"
+msgstr ""
+
+#: quickpick.php:714
+msgid "View"
+msgstr ""
+
+#: quickpick.php:717
+msgid "Preview"
 msgstr ""

@@ -5,7 +5,7 @@
 [![WordPress](https://img.shields.io/wordpress/plugin/installs/quickpick.svg)](https://wordpress.org/plugins/quickpick/)
 [![WordPress](https://img.shields.io/wordpress/plugin/rating/quickpick.svg)](https://wordpress.org/plugins/quickpick/)
 
-QuickPick is a tiny WordPress plugin that helps you save time by quickly accessing recently edited posts and pages. Perfect for content creators, editors, and developers who frequently work on multiple pieces of content.
+Jump back to recently edited posts and pages from the admin list screens or the toolbar.
 
 ## Features
 
@@ -30,23 +30,23 @@ QuickPick is a tiny WordPress plugin that helps you save time by quickly accessi
 
 1. Upload the plugin files to `/wp-content/plugins/quickpick/` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. The "QuickPick" button will appear in your Posts and Pages admin list views, and a QuickPick menu will appear in the admin toolbar.
+3. The "QuickPick" button will appear in your Posts and Pages admin list views.
 
 ## Usage
 
-After activation, a "QuickPick" button will appear in your Posts and Pages admin list views, and a QuickPick menu will appear in the admin toolbar. Click either to jump to recently edited content.
+After activation, a "QuickPick" button will appear in your Posts and Pages admin list views. Click it to jump to recently edited content. You can turn on a toolbar menu in Settings > QuickPick.
 
 ### For Posts
 - Shows the last 5 edited posts
 - Displays post title and last modified date/time
-- Direct links to edit each post
+- Direct links to edit or view each post
 
 ### For Pages
 - Shows the last 5 edited pages
 - Includes special homepage link if a static page is set as homepage
 - Quick "Set as Homepage" action for any published page (one-click with AJAX)
 - Displays page title and last modified date/time
-- Direct links to edit each page
+- Direct links to edit or view each page
 
 ## Requirements
 
@@ -72,8 +72,19 @@ Yes, QuickPick works with both single-site and multisite WordPress installations
 1. Posts list with the QuickPick button
 2. Pages list with the QuickPick button
 3. Page lists showing homepage link
+4. QuickPick settings page
+5. Admin toolbar menu with recently edited items
 
 ## Changelog
+
+### 1.0.8
+- Tested with WordPress 7.2
+- Arrow keys, Home, and End move through the list dropdown; Escape returns focus to the button
+- Set as Homepage only accepts a published page
+- View and Preview links on recent items in the list dropdown
+- List-screen script no longer depends on jQuery
+- "Only my content" matches pages you just saved even when WordPress does not store `_edit_last`
+- "Only my content" and the admin toolbar menu are off by default
 
 ### 1.0.7
 - Added a QuickPick menu to the WordPress admin toolbar

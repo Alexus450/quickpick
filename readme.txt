@@ -4,12 +4,12 @@ Donate link: http://paypal.me/gt330/10usd
 Tags: recently edited, quick access, admin, homepage, productivity
 Requires at least: 5.0
 Requires PHP: 5.6
-Tested up to: 7.1
-Stable tag: 1.0.7
+Tested up to: 7.2
+Stable tag: 1.0.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.txt
 
-QuickPick is a tiny WordPress plugin that will help you save time on finding recently edited posts or pages.
+Jump back to recently edited posts and pages from the admin list screens or the toolbar.
 
 == Description ==
 
@@ -37,9 +37,9 @@ QuickPick displays your last 5 edited posts or pages in a convenient dropdown me
 
 1. Install QuickPick either via the Plugins > Add New page in your WordPress Dashboard, or by downloading the plugin and uploading the file in Plugins > Add New.
 
-2. After activating QuickPick, a "QuickPick" button will appear in the Post/Page admin list views, and a QuickPick menu will appear in the admin toolbar.
+2. After activating QuickPick, a "QuickPick" button will appear in the Post/Page admin list views.
 
-3. Click the button or the toolbar menu to see your recently edited content and quickly jump to edit any item.
+3. Click the button to see your recently edited content and jump to edit any item. You can turn on a toolbar menu in Settings > QuickPick.
 
 == Frequently Asked Questions ==
 
@@ -64,8 +64,19 @@ Yes, QuickPick works with both single-site and multisite WordPress installations
 1. Posts list with the QuickPick button
 2. Pages list with the QuickPick button
 3. Pages list with the button showing homepage link
+4. QuickPick settings page
+5. Admin toolbar menu with recently edited items
 
 == Changelog ==
+
+= 1.0.8 =
+* Tested with WordPress 7.2
+* Arrow keys, Home, and End move through the list dropdown; Escape returns focus to the button
+* Set as Homepage only accepts a published page
+* View and Preview links on recent items in the list dropdown
+* List-screen script no longer depends on jQuery
+* "Only my content" matches pages you just saved even when WordPress does not store `_edit_last`
+* "Only my content" and the admin toolbar menu are off by default
 
 = 1.0.7 =
 * Added a QuickPick menu to the WordPress admin toolbar

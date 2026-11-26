@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       QuickPick
  * Plugin URI:        https://wordpress.org/plugins/quickpick
- * Description:       QuickPick is a tiny WordPress plugin that will help you to save time on finding just recently editing posts.
- * Version:           1.0.7
+ * Description:       Jump back to recently edited posts and pages from the admin list screens or the toolbar.
+ * Version:           1.0.8
  * Author:            Alexei Samarschi
  * Author URI:        https://profiles.wordpress.org/alexus450/
  * License:           GPL v2 or later
@@ -12,7 +12,6 @@
  * Domain Path:       /languages
  * Requires at least: 5.0
  * Requires PHP:      5.6
- * Tested up to:      7.1
  * Update URI:        https://wordpress.org/plugins/quickpick/
  */
 
@@ -50,6 +49,13 @@ if( ! class_exists( 'QuickPick' ) ) {
 		 * @var array
 		 */
 		private $recent_items_cache = array();
+
+		/**
+		 * Whether the current WP_Query is QuickPick's only-mine filter.
+		 *
+		 * @var bool
+		 */
+		private $filtering_only_mine = false;
 
 		/**
 		 * Main Quickpick Instance.
@@ -90,6 +96,8 @@ if( ! class_exists( 'QuickPick' ) ) {
 		add_filter( 'page_row_actions', array( $this, 'filter_admin_row_actions' ), 11, 2 );
 		add_action( 'wp_ajax_quickpick_set_homepage', array( $this, 'set_page_as_homepage' ) );
 		add_action( 'admin_notices', array( $this, 'render_success_notice' ) );
+		add_action( 'save_post', array( $this, 'record_last_editor' ), 10, 2 );
+		add_filter( 'posts_clauses', array( $this, 'filter_only_mine_clauses' ), 10, 2 );
 
 	}
 
@@ -152,7 +160,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 
 		$views['quickpick'] = sprintf(
 			'<div class="qp-dropdown" data-qp-dropdown>
-				<button type="button" class="qp-button" aria-expanded="false" aria-controls="%1$s">%2$s</button>
+				<button type="button" class="qp-button" aria-expanded="false" aria-haspopup="true" aria-controls="%1$s">%2$s</button>
 				<ul class="qp-menu" id="%1$s" hidden>%3$s</ul>
 			</div>',
 			esc_attr( $menu_id ),
@@ -190,15 +198,25 @@ if( ! class_exists( 'QuickPick' ) ) {
 				);
 			}
 
+			$view_html = '';
+			if ( ! empty( $item['view_link'] ) ) {
+				$view_html = sprintf(
+					'<a class="qp-item-view" href="%1$s">%2$s</a>',
+					esc_url( $item['view_link'] ),
+					esc_html( $item['view_label'] )
+				);
+			}
+
 			$rows .= sprintf(
-				'<li><a href="%1$s"><span class="qp-item-title">%2$s%3$s</span><span class="qp-item-meta">%4$s %5$s %6$s %7$s</span></a></li>',
+				'<li class="qp-item"><a class="qp-item-edit" href="%1$s"><span class="qp-item-title">%2$s%3$s</span><span class="qp-item-meta">%4$s %5$s %6$s %7$s</span></a>%8$s</li>',
 				esc_url( $item['edit_link'] ),
 				esc_html( $item['title'] ),
 				$status_html,
 				esc_html__( 'edited:', 'quickpick' ),
 				esc_html( $item['date'] ),
 				esc_html__( 'at', 'quickpick' ),
-				esc_html( $item['time'] )
+				esc_html( $item['time'] ),
+				$view_html
 			);
 		}
 
@@ -232,8 +250,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 			return $actions;
 		}
 
-		// Make sure the page is published
-		if( 'publish' !== $post->post_status ) {
+		if ( 'page' !== $post->post_type || 'publish' !== $post->post_status ) {
 			return $actions;
 		}
 
@@ -267,25 +284,20 @@ if( ! class_exists( 'QuickPick' ) ) {
 
 		check_ajax_referer( 'quickpick-set-homepage', 'nonce' );
 
-			if( isset( $_POST['page_id'] ) ) {
-				$page_id = absint( wp_unslash( $_POST['page_id'] ) );
-			} else {
-				wp_send_json_error( array( 'message' => esc_html__( 'Invalid page ID', 'quickpick' ) ) );
-				return;
-			}
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'You do not have permission to perform this action', 'quickpick' ) ) );
+		}
 
-			if( ! current_user_can( 'manage_options' ) ) {
-				wp_send_json_error( array( 'message' => esc_html__( 'You do not have permission to perform this action', 'quickpick' ) ) );
-				return;
-			}
+		$page_id = isset( $_POST['page_id'] ) ? absint( wp_unslash( $_POST['page_id'] ) ) : 0;
+		$page    = $page_id ? get_post( $page_id ) : null;
 
-			if( !empty( $page_id ) ) {
-				update_option( 'show_on_front', 'page' );
-				update_option( 'page_on_front', $page_id );
-				wp_send_json_success( array( 'message' => esc_html__( 'Page set as homepage successfully', 'quickpick' ) ) );
-			} else {
-				wp_send_json_error( array( 'message' => esc_html__( 'Invalid page ID', 'quickpick' ) ) );
-			}
+		if ( ! $page || 'page' !== $page->post_type || 'publish' !== $page->post_status ) {
+			wp_send_json_error( array( 'message' => esc_html__( 'Only a published page can be set as the homepage.', 'quickpick' ) ) );
+		}
+
+		update_option( 'show_on_front', 'page' );
+		update_option( 'page_on_front', $page_id );
+		wp_send_json_success( array( 'message' => esc_html__( 'Page set as homepage successfully', 'quickpick' ) ) );
 
 		}
 
@@ -316,7 +328,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 			wp_enqueue_script(
 				'quickpick-homepage-js',
 				plugins_url( '/assets/js/quickpick-homepage.js', QUICKPICK_PLUGIN_FILE ),
-				array( 'jquery' ),
+				array(),
 				QUICKPICK_VERSION,
 				true
 			);
@@ -502,8 +514,24 @@ if( ! class_exists( 'QuickPick' ) ) {
 
 		public function register_settings() {
 			register_setting( 'quickpick_settings_group', 'quickpick_items_limit', array( $this, 'sanitize_items_limit' ) );
-			register_setting( 'quickpick_settings_group', 'quickpick_only_mine', array( $this, 'sanitize_checkbox' ) );
-			register_setting( 'quickpick_settings_group', 'quickpick_show_admin_bar', array( $this, 'sanitize_checkbox' ) );
+			register_setting(
+				'quickpick_settings_group',
+				'quickpick_only_mine',
+				array(
+					'type'              => 'integer',
+					'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+					'default'           => 0,
+				)
+			);
+			register_setting(
+				'quickpick_settings_group',
+				'quickpick_show_admin_bar',
+				array(
+					'type'              => 'integer',
+					'sanitize_callback' => array( $this, 'sanitize_checkbox' ),
+					'default'           => 0,
+				)
+			);
 			register_setting( 'quickpick_settings_group', 'quickpick_enabled_post_types', array( $this, 'sanitize_post_types' ) );
 		}
 
@@ -549,14 +577,6 @@ if( ! class_exists( 'QuickPick' ) ) {
 			$icon_url   = plugins_url( '/assets/images/quickpick.png', QUICKPICK_PLUGIN_FILE );
 			?>
 			<div class="wrap qp-settings">
-				<!--
-				THESIS: Settings is a 30-second control strip for a tiny admin tool, not a WordPress form-table.
-				OWN-WORLD: WordPress admin chrome; the qp mark on black is the only brand object; forest green stays on the mark; theme-color drives the primary save.
-				STORY: An editor sets how many items appear, whose saves count, and which screens get QuickPick, then saves.
-				FIRST VIEWPORT: Mark and title on one row, purpose under the title, three stacked field groups, Save as the only primary control, support as a quiet close.
-				FORM: inherited WordPress admin Operate surface; no replacement world.
-				FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
-				-->
 				<header class="qp-settings-header">
 					<div class="qp-settings-mark" aria-hidden="true">
 						<img src="<?php echo esc_url( $icon_url ); ?>" alt="" width="48" height="48" />
@@ -582,6 +602,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 						<h2><?php esc_html_e( 'Whose content', 'quickpick' ); ?></h2>
 						<p class="qp-field-help"><?php esc_html_e( 'Filters by the last person who saved the item, not the original author.', 'quickpick' ); ?></p>
 						<label class="qp-check">
+							<input type="hidden" name="quickpick_only_mine" value="0" />
 							<input name="quickpick_only_mine" type="checkbox" value="1" <?php checked( 1, absint( get_option( 'quickpick_only_mine', 0 ) ) ); ?> />
 							<span><?php esc_html_e( 'Only show items I last saved', 'quickpick' ); ?></span>
 						</label>
@@ -591,7 +612,8 @@ if( ! class_exists( 'QuickPick' ) ) {
 						<h2><?php esc_html_e( 'Where it appears', 'quickpick' ); ?></h2>
 						<p class="qp-field-help"><?php esc_html_e( 'The dropdown appears on each selected list screen. The toolbar menu is available from any screen when it is turned on.', 'quickpick' ); ?></p>
 						<label class="qp-check qp-check-toolbar">
-							<input name="quickpick_show_admin_bar" type="checkbox" value="1" <?php checked( 1, absint( get_option( 'quickpick_show_admin_bar', 1 ) ) ); ?> />
+							<input type="hidden" name="quickpick_show_admin_bar" value="0" />
+							<input name="quickpick_show_admin_bar" type="checkbox" value="1" <?php checked( 1, absint( get_option( 'quickpick_show_admin_bar', 0 ) ) ); ?> />
 							<span><?php esc_html_e( 'Show QuickPick in the admin toolbar', 'quickpick' ); ?></span>
 						</label>
 						<?php if ( ! empty( $post_types ) ) : ?>
@@ -678,13 +700,74 @@ if( ! class_exists( 'QuickPick' ) ) {
 			);
 
 			if ( get_option( 'quickpick_only_mine', 0 ) ) {
-				$args['meta_key']   = '_edit_last'; // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				$args['meta_value'] = (string) get_current_user_id(); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				$this->filtering_only_mine = true;
 			}
 
 			$query = new WP_Query( $args );
+			$this->filtering_only_mine               = false;
 			$this->recent_items_cache[ $cache_key ] = $query->posts;
 			return $this->recent_items_cache[ $cache_key ];
+		}
+
+		/**
+		 * Store the current user as last editor.
+		 *
+		 * WordPress 7 no longer writes `_edit_last` on a normal save.
+		 *
+		 * @since 1.0.8
+		 * @param int     $post_id Post ID.
+		 * @param WP_Post $post    Post object.
+		 * @return void
+		 */
+		public function record_last_editor( $post_id, $post ) {
+			if ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) {
+				return;
+			}
+			if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+				return;
+			}
+			if ( ! $post instanceof WP_Post || 'auto-draft' === $post->post_status ) {
+				return;
+			}
+
+			$user_id = get_current_user_id();
+			if ( $user_id < 1 ) {
+				return;
+			}
+
+			update_post_meta( $post_id, '_edit_last', $user_id );
+		}
+
+		/**
+		 * Restrict recent-item queries to the current user's last saves.
+		 *
+		 * Uses `_edit_last` when present, otherwise the latest revision author,
+		 * otherwise the original author. Core stopped writing `_edit_last` on save.
+		 *
+		 * @since 1.0.8
+		 * @param array    $clauses Query clauses.
+		 * @param WP_Query $query  Query object.
+		 * @return array
+		 */
+		public function filter_only_mine_clauses( $clauses, $query ) {
+			if ( ! $this->filtering_only_mine ) {
+				return $clauses;
+			}
+
+			global $wpdb;
+
+			$user_id = get_current_user_id();
+			if ( $user_id < 1 ) {
+				return $clauses;
+			}
+
+			$clauses['join'] .= " LEFT JOIN {$wpdb->postmeta} AS qp_edit_last ON (qp_edit_last.post_id = {$wpdb->posts}.ID AND qp_edit_last.meta_key = '_edit_last') ";
+			$clauses['where'] .= $wpdb->prepare(
+				" AND CAST(COALESCE(qp_edit_last.meta_value, (SELECT qp_rev.post_author FROM {$wpdb->posts} AS qp_rev WHERE qp_rev.post_parent = {$wpdb->posts}.ID AND qp_rev.post_type = 'revision' ORDER BY qp_rev.ID DESC LIMIT 1), {$wpdb->posts}.post_author) AS UNSIGNED) = %d ",
+				$user_id
+			);
+
+			return $clauses;
 		}
 
 		/**
@@ -707,12 +790,26 @@ if( ! class_exists( 'QuickPick' ) ) {
 				$status_label = $status_object->label;
 			}
 
+			$view_link  = '';
+			$view_label = '';
+			if ( current_user_can( 'read_post', $post->ID ) ) {
+				if ( 'publish' === $status ) {
+					$view_link  = get_permalink( $post );
+					$view_label = __( 'View', 'quickpick' );
+				} else {
+					$view_link  = get_preview_post_link( $post );
+					$view_label = __( 'Preview', 'quickpick' );
+				}
+			}
+
 			return array(
 				'title'        => $title,
 				'status_label' => $status_label,
 				'date'         => get_the_modified_date( get_option( 'date_format' ), $post ),
 				'time'         => get_the_modified_time( get_option( 'time_format' ), $post ),
 				'edit_link'    => get_edit_post_link( $post->ID ),
+				'view_link'    => $view_link,
+				'view_label'   => $view_label,
 			);
 		}
 
@@ -723,7 +820,7 @@ if( ! class_exists( 'QuickPick' ) ) {
 		 * @return bool
 		 */
 		private function is_admin_bar_menu_enabled() {
-			return (bool) absint( get_option( 'quickpick_show_admin_bar', 1 ) );
+			return (bool) absint( get_option( 'quickpick_show_admin_bar', 0 ) );
 		}
 
 		private function enqueue_plugin_style() {
